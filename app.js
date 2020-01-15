@@ -3,8 +3,11 @@ const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const graphqlHttp = require('express-graphql');
 
 const keys = require('./config/keys');
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolvers');
 
 const app = express();
 
@@ -21,6 +24,11 @@ app.use((req, res, next) => {
 
   next();
 });
+
+app.use('/graphql', graphqlHttp({
+  schema: graphqlSchema,
+  rootValue: graphqlResolver
+}));
 
 app.use((error, req, res, next) => {
   console.log(error);
