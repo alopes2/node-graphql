@@ -2,11 +2,13 @@ const path = require('path');
 const fs = require('fs');
 
 const express = require('express');
+const https = require('https');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const graphqlHttp = require('express-graphql');
 const upload = require('multer');
 const helmet = require('helmet');
+const morgan = require('morgan');
 const compression = require('compression');
 
 const keys = require('./config/keys');
@@ -16,6 +18,17 @@ const authMiddleware = require('./middleware/auth');
 const { clearImage } = require('./util/file');
 
 const app = express();
+
+// -- This is only needed if you need to set this manually --
+// -- Usually your hosting provider already sets SSL connection for public traffic -- 
+// for generating the private key and the certificate use the following command with OpenSSL
+// openssl req -nodes -new -x509 -keyout onfig/ssl/server.key -out onfig/ssl/server.cert
+// const privateKey = fs.readFileSync(
+//   path.join(__dirname, 'config/ssl/server.key')
+// );
+// const certificate = fs.readFileSync(
+//   path.join(__dirname, 'config/ssl/server.cert')
+// );
 
 const fileStorage = upload.diskStorage({
   destination: (req, file, cb) => {
@@ -122,11 +135,20 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(keys.mongoUri)
   .then(result => {
-    app.listen(8080);
+    app.listen(8080, () => {
+      console.log('-----------------------');
+      console.log('Listening on port 8080');
+      console.log('-----------------------');
+    });
 
-    console.log('-----------------------');
-    console.log('Listening on port 8080');
-    console.log('-----------------------');
+    // Usually your hosting provider already sets https for public traffic
+    // This is only needed if you need to set manually by some reason
+    // https
+    //   .createServer({ key: privateKey, cert: certificate }, app)
+    //   .listen(process.env.PORT || 8080, () => {
+    //     console.log('Listening on port 8080');
+    //   });
+
   })
   .catch(err => {
     console.log(err);
