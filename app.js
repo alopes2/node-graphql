@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const graphqlHttp = require('express-graphql');
 const upload = require('multer');
+const helmet = require('helmet');
 
 const keys = require('./config/keys');
 const graphqlSchema = require('./graphql/schema');
@@ -34,6 +35,8 @@ const filefilter = (req, file, cb) => {
     cb(null, false);
   }
 };
+
+app.use(helmet());
 
 app.use(bodyParser.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
