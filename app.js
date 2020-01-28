@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const graphqlHttp = require('express-graphql');
 const upload = require('multer');
 const helmet = require('helmet');
+const compression = require('compression');
 
 const keys = require('./config/keys');
 const graphqlSchema = require('./graphql/schema');
@@ -37,6 +38,7 @@ const filefilter = (req, file, cb) => {
 };
 
 app.use(helmet());
+app.use(compression());
 
 app.use(bodyParser.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
