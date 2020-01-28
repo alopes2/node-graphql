@@ -1,13 +1,12 @@
 const jwt = require('jsonwebtoken');
 const keys = require('../config/keys');
 
-exports.isAuth = (req, res, next) => {
+module.exports = (req, res, next) => {
   const authHeader = req.get('Authorization');
 
   if (!authHeader) {
-    const error = new Error('Not a valid authorization header.');
-    error.statusCode = 401;
-    throw error;
+    req.isAuth = false;
+    return next();
   }
 
   const token = authHeader.split(' ')[1];
@@ -16,17 +15,17 @@ exports.isAuth = (req, res, next) => {
   try {
     decodedToken = jwt.verify(token, keys.jwtSecret);
   } catch(e) {
-    e.statusCode = 500;
-    throw e;
+    req.isAuth = false;
+    return next();
   }
 
   if (!decodedToken) {
-    const error = new Error('Not authenticated.');
-    error.statusCode = 401;
-    throw error;
+    req.isAuth = false;
+    return next();
   }
 
   req.userId = decodedToken.userId;
-  
+  req.isAuth = true;
+
   next();
 };

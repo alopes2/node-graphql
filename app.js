@@ -4,12 +4,36 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const graphqlHttp = require('express-graphql');
+const upload = require('multer');
 
 const keys = require('./config/keys');
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
+const authMiddleware = require('./middleware/auth');
+const { clearImage } = require('./util/file');
 
 const app = express();
+
+const fileStorage = upload.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'images');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const filefilter = (req, file, cb) => {
+  if (
+    file.mimetype === 'image/png' ||
+    file.mimetype === 'image/jpg' ||
+    file.mimetype === 'image/jpeg'
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
 
 app.use(bodyParser.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
@@ -28,6 +52,30 @@ app.use((req, res, next) => {
 
   next();
 });
+
+app.use(authMiddleware);
+
+app.put(
+  '/post-image',
+  upload({ storage: fileStorage, fileFilter: filefilter }).single('image'),
+  (req, res, next) => {
+    if (!req.isAuth) {
+      throw new Error('Not authenticated.');
+    }
+
+    if (!req.file) {
+      return res.status(200).json({ message: 'No file provided!' });
+    }
+
+    if (req.body.oldPath) {
+      clearImage(req.body.oldPath);
+    }
+
+    return res
+      .status(201)
+      .json({ message: 'File stored.', filePath: req.file.path });
+  }
+);
 
 app.use(
   '/graphql',
@@ -59,7 +107,7 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-  .connect(keys.databaseConnectionString)
+  .connect(keys.mongoUri)
   .then(result => {
     app.listen(8080);
 
